@@ -14,9 +14,10 @@ def denoise_cache(
     # sampling parameters
     timesteps: list[float],
     guidance: float = 4.0,
+    model_kwargs=None,
 ):  
     # init cache
-    cache_dic, current = cache_init(timesteps)
+    cache_dic, current = cache_init(timesteps, model_kwargs=model_kwargs)
     # this is ignored for schnell
     guidance_vec = torch.full((img.shape[0],), guidance, device=img.device, dtype=img.dtype)
     current['step']=0

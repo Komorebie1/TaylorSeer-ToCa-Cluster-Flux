@@ -37,7 +37,7 @@ class SamplingOptions:
     #first_enhance: int          # Initial enhancement steps
 
 
-def main(opts: SamplingOptions):
+def main(opts: SamplingOptions, model_kwargs: dict):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Optional NSFW classifier
@@ -63,6 +63,14 @@ def main(opts: SamplingOptions):
     opts.width = 16 * (opts.width // 16)
     opts.height = 16 * (opts.height // 16)
 
+    opts.output_dir = os.path.join(opts.output_dir, 
+                                    f"{model_kwargs['mode']}-"
+                                    f"{model_kwargs['fresh_threshold']}-"
+                                    f"{model_kwargs['max_order']}-"
+                                    f"{model_kwargs['smooth_rate']}-"
+                                    f"{model_kwargs['cluster_num']}"
+                                    )
+    print(opts.output_dir)
     # Set output directory and index
     output_name = os.path.join(opts.output_dir, f"img_{{idx}}.jpg")
     if not os.path.exists(opts.output_dir):
@@ -128,7 +136,7 @@ def main(opts: SamplingOptions):
                 if opts.test_FLOPs:
                     x = denoise_test_FLOPs(model, **inp, timesteps=timesteps, guidance=opts.guidance)
                 else:
-                    x = denoise_cache(model, **inp, timesteps=timesteps, guidance=opts.guidance)
+                    x = denoise_cache(model, **inp, timesteps=timesteps, guidance=opts.guidance, model_kwargs=model_kwargs)
                     #x = search_denoise_cache(model, **inp, timesteps=timesteps, guidance=opts.guidance, interval=opts.interval, max_order=opts.max_order, first_enhance=opts.first_enhance)
 
                 # Decode latent variables
@@ -193,6 +201,12 @@ def app():
     parser.add_argument('--add_sampling_metadata', action='store_true', help='Whether to add prompt metadata to images.')
     parser.add_argument('--use_nsfw_filter', action='store_true', help='Enable NSFW filter.')
     parser.add_argument('--test_FLOPs', action='store_true', help='Test inference computation cost.')
+    parser.add_argument('--mode', type=str, default='Taylor', choices=['Taylor-Cache', 'ToCa', 'Taylor', 'Taylor-Cluster'], help='Cache mode.')
+    parser.add_argument('--max_order', type=int, default=1, help='Max order of Taylor expansion.')
+    parser.add_argument('--fresh_threshold', type=int, default=5, help='Fresh threshold.')
+    parser.add_argument('--smooth_rate', type=float, default=0.0, help='Smooth rate.')
+    parser.add_argument('--cluster_num', type=int, default=10, help='Number of clusters.')
+    parser.add_argument('--topk', type=int, default=1, help='Number of tokens to fresh per cluster.')
 
     args = parser.parse_args()
 
@@ -214,8 +228,16 @@ def app():
         test_FLOPs=args.test_FLOPs,
     )
 
+    model_kwargs = {
+        'mode': args.mode, 
+        'max_order': args.max_order,
+        'fresh_threshold': args.fresh_threshold, 
+        'smooth_rate': args.smooth_rate,
+        'cluster_num': args.cluster_num,
+        'topk': args.topk,
+    }
 
-    main(opts)
+    main(opts, model_kwargs)
 
 
 if __name__ == '__main__':

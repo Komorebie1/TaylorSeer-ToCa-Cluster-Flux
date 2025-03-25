@@ -27,7 +27,10 @@ def cal_type(cache_dic, current):
     
     elif (cache_dic['taylor_cache']):
         cache_dic['cache_counter'] += 1
-        current['type'] = 'taylor_cache'
+        if cache_dic['fresh_ratio'] > 0.0:
+            current['type'] = 'Taylor-Cluster'
+        else:
+            current['type'] = 'taylor_cache'
         
 
     elif (cache_dic['cache_counter'] % 2 == 1): # 0: ToCa-Aggresive-ToCa, 1: Aggresive-ToCa-Aggresive

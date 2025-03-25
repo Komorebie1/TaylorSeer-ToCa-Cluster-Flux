@@ -1,4 +1,4 @@
-def cache_init(timesteps, model_kwargs=None):   
+def cache_init(timesteps, model_kwargs:dict | None):   
     '''
     Initialization for cache.
     '''
@@ -60,7 +60,8 @@ def cache_init(timesteps, model_kwargs=None):
     cache_dic['taylor_cache'] = False
     cache_dic['Delta-DiT'] = False
 
-    mode = 'Taylor'
+    # mode = 'Taylor'
+    mode = model_kwargs['mode']
 
     if mode == 'original':
         cache_dic['cache_type'] = 'random' 
@@ -85,7 +86,6 @@ def cache_init(timesteps, model_kwargs=None):
         cache_dic['soft_fresh_weight'] = 0.0
         cache_dic['max_order'] = 0
         cache_dic['first_enhance'] = 3
-        
     
     elif mode == 'Taylor':
         cache_dic['cache_type'] = 'random'
@@ -99,6 +99,25 @@ def cache_init(timesteps, model_kwargs=None):
         cache_dic['taylor_cache'] = True
         cache_dic['max_order'] = 1
         cache_dic['first_enhance'] = 3
+
+    elif mode == 'Taylor-Cluster':
+        cache_dic['cache_type'] = 'random'
+        cache_dic['cache_index'] = cache_index
+        cache_dic['cache'] = cache
+        cache_dic['fresh_ratio_schedule'] = 'ToCa' 
+        cache_dic['fresh_ratio'] = 0.1
+        cache_dic['fresh_threshold'] = model_kwargs['fresh_threshold']
+        cache_dic['force_fresh'] = 'global' 
+        cache_dic['soft_fresh_weight'] = 0.0
+        cache_dic['taylor_cache'] = True
+        cache_dic['max_order'] = model_kwargs['max_order']
+        cache_dic['first_enhance'] = 3
+        cache_dic['cluster_info'] = {}
+        cache_dic['cluster_num'] = model_kwargs['cluster_num']
+        cache_dic['topk'] = model_kwargs['topk']
+        cache_dic['cluster_info']['cluster_indices'] = None
+        cache_dic['cluster_info']['centroids'] = None
+        cache_dic['smooth_rate'] = model_kwargs['smooth_rate']
 
     elif mode == 'Delta':
         cache_dic['cache_type'] = 'random'

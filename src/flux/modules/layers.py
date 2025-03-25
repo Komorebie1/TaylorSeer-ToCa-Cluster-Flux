@@ -7,9 +7,11 @@ from torch import Tensor, nn
 
 from flux.math import attention, rope
 
-from flux.modules.cache_functions import force_init, cache_cutfresh, update_cache
+from flux.modules.cache_functions import force_init, cache_cutfresh, cache_cutfresh_img, update_cache, smooth_update_cache
 
 from flux.taylor_utils import taylor_formula, derivative_approximation, taylor_cache_init
+
+from flux.cluster_utils import get_cluster_info
 
 class EmbedND(nn.Module):
     def __init__(self, dim: int, theta: int, axes_dim: list[int]):
@@ -347,6 +349,44 @@ class DoubleStreamBlock(nn.Module):
                 current['module'] = 'txt_mlp'
                 txt = txt + txt_mod2.gate * taylor_formula(cache_dic=cache_dic, current=current)
 
+            elif current['type'] == 'Taylor-Cluster':
+
+                img_mod1, img_mod2 = self.img_mod(vec)
+                txt_mod1, txt_mod2 = self.txt_mod(vec)
+
+                current['module'] = 'attn'
+
+                # caculate the img bloks
+                current['module'] = 'img_attn'
+                img = img + img_mod1.gate * taylor_formula(cache_dic=cache_dic, current=current)
+
+                current['module'] = 'img_mlp'
+
+                fresh_indices, fresh_tokens_img = cache_cutfresh_img(cache_dic=cache_dic, tokens=img, current=current)
+                # fresh_tokens_img = fresh_tokens_img.to(torch.bfloat16)
+                fresh_tokens_img = self.img_mlp((1 + img_mod2.scale) * self.img_norm2(fresh_tokens_img) + img_mod2.shift)
+                if cache_dic['smooth_rate'] > 0.0:
+                    smooth_update_cache(fresh_indices, fresh_tokens=fresh_tokens_img, cache_dic=cache_dic, current=current)
+                else:
+                    update_cache(fresh_indices, fresh_tokens=fresh_tokens_img, cache_dic=cache_dic, current=current)
+            
+                img = img + img_mod2.gate * taylor_formula(cache_dic=cache_dic, current=current)
+                
+                # caculate the txt bloks
+                current['module'] = 'txt_attn'
+                
+                txt = txt + txt_mod1.gate * taylor_formula(cache_dic=cache_dic, current=current)
+                
+                current['module'] = 'txt_mlp'
+                
+                fresh_indices, fresh_tokens_txt = cache_cutfresh(cache_dic=cache_dic, tokens=txt, current=current)
+                fresh_tokens_txt = self.txt_mlp((1 + txt_mod2.scale) * self.txt_norm2(fresh_tokens_txt) + txt_mod2.shift)
+                # if cache_dic['smooth_rate'] > 0.0:
+                #     smooth_update_cache(fresh_indices, fresh_tokens=fresh_tokens_txt, cache_dic=cache_dic, current=current)
+                # else:
+                update_cache(fresh_indices, fresh_tokens=fresh_tokens_txt, cache_dic=cache_dic, current=current)
+
+                txt = txt + txt_mod2.gate * taylor_formula(cache_dic=cache_dic, current=current)            
 
             elif current['type'] == 'aggressive':
                 current['module'] = 'skipped'
@@ -491,6 +531,10 @@ class SingleStreamBlock(nn.Module):
                 output = cache_dic['cache'][-1]['single_stream'][current['layer']]['total'][0]
             
             elif current['type'] == 'taylor_cache':
+                current['module'] = 'total'
+                output = taylor_formula(cache_dic=cache_dic, current=current)
+
+            elif current['type'] == 'Taylor-Cluster':
                 current['module'] = 'total'
                 output = taylor_formula(cache_dic=cache_dic, current=current)
 
