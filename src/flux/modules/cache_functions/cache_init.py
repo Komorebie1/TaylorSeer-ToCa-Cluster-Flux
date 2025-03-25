@@ -62,6 +62,7 @@ def cache_init(timesteps, model_kwargs:dict | None):
 
     # mode = 'Taylor'
     mode = model_kwargs['mode']
+    cache_dic['mode'] = mode
 
     if mode == 'original':
         cache_dic['cache_type'] = 'random' 

@@ -291,6 +291,9 @@ class DoubleStreamBlock(nn.Module):
                 #txt = txt + txt_mod2.gate * cache_dic['cache'][-1]['double_stream'][current['layer']]['txt_mlp']
                 #cache_dic['cache'][-1]['double_stream'][current['layer']]['txt_mod2'] = txt_mod2
 
+                if current['layer'] == 18 and cache_dic['mode'] == 'Taylor-Cluster':
+                    get_cluster_info(img, cache_dic, current)
+
             elif current['type'] == 'ToCa':
                 img_mod1, img_mod2 = self.img_mod(vec)
                 txt_mod1, txt_mod2 = self.txt_mod(vec)
