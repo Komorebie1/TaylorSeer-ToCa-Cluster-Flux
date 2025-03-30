@@ -63,13 +63,18 @@ def main(opts: SamplingOptions, model_kwargs: dict):
     opts.width = 16 * (opts.width // 16)
     opts.height = 16 * (opts.height // 16)
 
-    opts.output_dir = os.path.join(opts.output_dir, 
-                                    f"{model_kwargs['mode']}-"
-                                    f"{model_kwargs['fresh_threshold']}-"
-                                    f"{model_kwargs['max_order']}-"
-                                    f"{model_kwargs['smooth_rate']}-"
-                                    f"{model_kwargs['cluster_num']}"
+    if model_kwargs['mode'] == 'Taylor':
+        opts.output_dir = os.path.join(opts.output_dir, 
+                                    f"{model_kwargs['fresh_threshold']}-{model_kwargs['max_order']}",
+                                    f"{model_kwargs['mode']}"
                                     )
+    else:
+        opts.output_dir = os.path.join(opts.output_dir, 
+                                        f"{model_kwargs['fresh_threshold']}-{model_kwargs['max_order']}",
+                                        f"{model_kwargs['mode']}",
+                                        f"{model_kwargs['smooth_rate']}-"
+                                        f"{model_kwargs['cluster_num']}"
+                                        )
     print(opts.output_dir)
     # Set output directory and index
     output_name = os.path.join(opts.output_dir, f"img_{{idx}}.jpg")

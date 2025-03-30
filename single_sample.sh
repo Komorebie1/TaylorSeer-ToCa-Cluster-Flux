@@ -5,7 +5,7 @@ max_order=1
 fresh_threshold=5
 
 
-CUDA_VISIBLE_DEVICES=0 python src/sample.py --prompt_file ./prompt.txt \
+CUDA_VISIBLE_DEVICES=0 python src/sample.py --prompt_file ./single_prompt.txt \
   --width 1024 --height 1024 \
   --model_name flux-dev \
   --add_sampling_metadata \

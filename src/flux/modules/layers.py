@@ -7,7 +7,7 @@ from torch import Tensor, nn
 
 from flux.math import attention, rope
 
-from flux.modules.cache_functions import force_init, cache_cutfresh, cache_cutfresh_img, update_cache, smooth_update_cache
+from flux.modules.cache_functions import force_init, cache_cutfresh, cache_cutfresh_img_txt, update_cache, smooth_update_cache
 
 from flux.taylor_utils import taylor_formula, derivative_approximation, taylor_cache_init
 
@@ -271,6 +271,8 @@ class DoubleStreamBlock(nn.Module):
                 derivative_approximation(cache_dic=cache_dic, current=current, feature=img_mlp_out)
                 img = img + img_mod2.gate * img_mlp_out
                 #cache_dic['cache'][-1]['double_stream'][current['layer']]['img_mod2'] = img_mod2
+                if current['layer'] == 18 and cache_dic['mode'] == 'Taylor-Cluster':
+                    get_cluster_info(img, cache_dic, current)
                 
 
                 # calculate the txt bloks
@@ -290,9 +292,8 @@ class DoubleStreamBlock(nn.Module):
                 txt = txt + txt_mod2.gate * txt_mlp_out
                 #txt = txt + txt_mod2.gate * cache_dic['cache'][-1]['double_stream'][current['layer']]['txt_mlp']
                 #cache_dic['cache'][-1]['double_stream'][current['layer']]['txt_mod2'] = txt_mod2
-
                 if current['layer'] == 18 and cache_dic['mode'] == 'Taylor-Cluster':
-                    get_cluster_info(img, cache_dic, current)
+                    get_cluster_info(txt, cache_dic, current)
 
             elif current['type'] == 'ToCa':
                 img_mod1, img_mod2 = self.img_mod(vec)
@@ -365,7 +366,7 @@ class DoubleStreamBlock(nn.Module):
 
                 current['module'] = 'img_mlp'
 
-                fresh_indices, fresh_tokens_img = cache_cutfresh_img(cache_dic=cache_dic, tokens=img, current=current)
+                fresh_indices, fresh_tokens_img = cache_cutfresh_img_txt(cache_dic=cache_dic, tokens=img, current=current)
                 # fresh_tokens_img = fresh_tokens_img.to(torch.bfloat16)
                 fresh_tokens_img = self.img_mlp((1 + img_mod2.scale) * self.img_norm2(fresh_tokens_img) + img_mod2.shift)
                 if cache_dic['smooth_rate'] > 0.0:
@@ -382,7 +383,7 @@ class DoubleStreamBlock(nn.Module):
                 
                 current['module'] = 'txt_mlp'
                 
-                fresh_indices, fresh_tokens_txt = cache_cutfresh(cache_dic=cache_dic, tokens=txt, current=current)
+                fresh_indices, fresh_tokens_txt = cache_cutfresh_img_txt(cache_dic=cache_dic, tokens=txt, current=current)
                 fresh_tokens_txt = self.txt_mlp((1 + txt_mod2.scale) * self.txt_norm2(fresh_tokens_txt) + txt_mod2.shift)
                 # if cache_dic['smooth_rate'] > 0.0:
                 #     smooth_update_cache(fresh_indices, fresh_tokens=fresh_tokens_txt, cache_dic=cache_dic, current=current)

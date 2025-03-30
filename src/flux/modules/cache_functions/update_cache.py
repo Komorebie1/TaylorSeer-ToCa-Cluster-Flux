@@ -19,8 +19,10 @@ def smooth_update_cache(fresh_indices, fresh_tokens, cache_dic, current, fresh_a
     module = current['module']
 
     fresh_tokens = fresh_tokens.to(torch.bfloat16)
+    # cluster_info = cache_dic['cluster_info']
+    cluster_info = cache_dic['cluster_info'][current['stream']][current['module']]
     cluster_indices, cluster_num, topk = \
-        cache_dic['cluster_info']['cluster_indices'], cache_dic['cluster_info']['cluster_num'], cache_dic['cluster_info']['topk']
+        cluster_info['cluster_indices'], cluster_info['cluster_num'], cluster_info['topk']
     smooth_rate = cache_dic['smooth_rate']
     dim = fresh_tokens.shape[-1]
     cache_dic['cache'][-1][current['stream']][layer][module][0].scatter_(dim=1, index=fresh_indices.unsqueeze(-1).expand(-1, -1, dim), src=fresh_tokens)

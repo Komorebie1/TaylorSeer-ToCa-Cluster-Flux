@@ -46,7 +46,7 @@ def cache_cutfresh(cache_dic, tokens, current):
     fresh_tokens = torch.gather(input = tokens, dim = 1, index = fresh_indices_expand)
     return fresh_indices, fresh_tokens
 
-def cache_cutfresh_img(cache_dic, tokens, current):
+def cache_cutfresh_img_txt(cache_dic, tokens, current):
     '''
     Cut fresh tokens from the input tokens and update the cache counter.
     

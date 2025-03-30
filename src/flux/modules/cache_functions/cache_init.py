@@ -70,10 +70,10 @@ def cache_init(timesteps, model_kwargs:dict | None):
         cache_dic['cache'] = cache
         cache_dic['fresh_ratio_schedule'] = 'ToCa'
         cache_dic['fresh_ratio'] = 0.0
-        cache_dic['fresh_threshold'] = 1
+        cache_dic['fresh_threshold'] = model_kwargs['fresh_threshold']
         cache_dic['force_fresh'] = 'global'
         cache_dic['soft_fresh_weight'] = 0.0
-        cache_dic['max_order'] = 0
+        cache_dic['max_order'] = model_kwargs['max_order']
         cache_dic['first_enhance'] = 3
         
     elif mode == 'ToCa':
@@ -82,10 +82,10 @@ def cache_init(timesteps, model_kwargs:dict | None):
         cache_dic['cache'] = cache
         cache_dic['fresh_ratio_schedule'] = 'ToCa' 
         cache_dic['fresh_ratio'] = 0.1
-        cache_dic['fresh_threshold'] = 5
+        cache_dic['fresh_threshold'] = model_kwargs['fresh_threshold']
         cache_dic['force_fresh'] = 'global' 
         cache_dic['soft_fresh_weight'] = 0.0
-        cache_dic['max_order'] = 0
+        cache_dic['max_order'] = model_kwargs['max_order']
         cache_dic['first_enhance'] = 3
     
     elif mode == 'Taylor':
@@ -94,11 +94,11 @@ def cache_init(timesteps, model_kwargs:dict | None):
         cache_dic['cache'] = cache
         cache_dic['fresh_ratio_schedule'] = 'ToCa' 
         cache_dic['fresh_ratio'] = 0.0
-        cache_dic['fresh_threshold'] = 6
+        cache_dic['fresh_threshold'] = model_kwargs['fresh_threshold']
         cache_dic['force_fresh'] = 'global' 
         cache_dic['soft_fresh_weight'] = 0.0
         cache_dic['taylor_cache'] = True
-        cache_dic['max_order'] = 1
+        cache_dic['max_order'] = model_kwargs['max_order']
         cache_dic['first_enhance'] = 3
 
     elif mode == 'Taylor-Cluster':
@@ -116,9 +116,19 @@ def cache_init(timesteps, model_kwargs:dict | None):
         cache_dic['cluster_info'] = {}
         cache_dic['cluster_num'] = model_kwargs['cluster_num']
         cache_dic['topk'] = model_kwargs['topk']
-        cache_dic['cluster_info']['cluster_indices'] = None
-        cache_dic['cluster_info']['centroids'] = None
         cache_dic['smooth_rate'] = model_kwargs['smooth_rate']
+        # cache_dic['cluster_info']['cluster_indices'] = None
+        # cache_dic['cluster_info']['centroids'] = None
+
+        cluster_info_dict = {}
+        cluster_info_dict['cluster_indices'] = None
+        cluster_info_dict['centroids'] = None
+
+        cache_dic['cluster_info']['double_stream'] = {}
+        cache_dic['cluster_info']['single_stream'] = {}
+        cache_dic['cluster_info']['double_stream']['img_mlp'] = cluster_info_dict
+        cache_dic['cluster_info']['double_stream']['txt_mlp'] = cluster_info_dict
+
 
     elif mode == 'Delta':
         cache_dic['cache_type'] = 'random'
