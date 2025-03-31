@@ -2,6 +2,7 @@ import torch
 from ..model import Flux
 from torch import Tensor
 from ..modules.cache_functions import cache_init
+# from ....exp import draw_cluster
 
 def denoise_cache(
     model: Flux,
@@ -40,5 +41,6 @@ def denoise_cache(
         #print(img.shape)
         img = img + (t_prev - t_curr) * pred
         current['step'] += 1
+        # draw_cluster(img, cache_dic, current)
 
     return img

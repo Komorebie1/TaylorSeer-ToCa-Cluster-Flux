@@ -16,7 +16,7 @@ def select_one_fresh_index_per_cluster(cache_dic, current):
     '''
     从每个聚类中恰好只选一个 fresh index
     '''
-    cluster_info = cache_dic['cluster_info']
+    cluster_info = cache_dic['cluster_info'][current['stream']][current['module']]
     cluster_indices, cluster_num, K = cluster_info['cluster_indices'], cluster_info['cluster_num'], cluster_info['topk']
     B, N = cluster_indices.shape
 

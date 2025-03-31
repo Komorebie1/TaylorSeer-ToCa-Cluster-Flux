@@ -1,4 +1,5 @@
 import torch
+import copy
 from .Kmeans import Kmeans
 
 def cluster_scheduler(cache_dic, current):
@@ -6,12 +7,21 @@ def cluster_scheduler(cache_dic, current):
 
 def get_cluster_info(X, cache_dic, current):
     cluster_num, k = cluster_scheduler(cache_dic, current)
-    cache_centroids = cache_dic['cluster_info'].get('centroids', None)
+    cluster_info = copy.deepcopy(cache_dic['cluster_info'][current['stream']][current['module']])
+    cache_centroids = cluster_info.get('centroids', None)
     cluster_indices, cache_centroids = Kmeans(n_clusters=cluster_num, init='random').fit(X, cache_centroids)
-    cache_dic['cluster_info']['cluster_num'] = cluster_num
-    cache_dic['cluster_info']['topk'] = k
-    cache_dic['cluster_info']['cluster_indices'] = cluster_indices
-    cache_dic['cluster_info']['centroids'] = cache_centroids
+    
+    cluster_info['cluster_num'] = cluster_num
+    cluster_info['topk'] = k
+    cluster_info['cluster_indices'] = cluster_indices
+    cluster_info['centroids'] = cache_centroids
+    # if current['module'] == 'txt_mlp':
+    #     print("img_mlp_2", cache_dic['cluster_info'][current['stream']]['img_mlp']['cluster_indices'].shape)
+    cache_dic['cluster_info'][current['stream']][current['module']] = copy.deepcopy(cluster_info)
+    # if current['module'] == 'txt_mlp':
+    #     print("txt_mlp_2", cache_dic['cluster_info'][current['stream']]['txt_mlp']['cluster_indices'].shape)
+    #     print("img_mlp_2", cache_dic['cluster_info'][current['stream']]['img_mlp']['cluster_indices'].shape)
+    # print("module: ", current['module'], "cluster_indice shape: ", cache_dic['cluster_info'][current['stream']][current['module']]['cluster_indices'].shape)
 
 def construct_consecutive_cluster_info(X, cache_dic, current):
     '''
