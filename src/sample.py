@@ -72,8 +72,8 @@ def main(opts: SamplingOptions, model_kwargs: dict):
         opts.output_dir = os.path.join(opts.output_dir, 
                                         f"{model_kwargs['fresh_threshold']}-{model_kwargs['max_order']}",
                                         f"{model_kwargs['mode']}",
-                                        f"{model_kwargs['smooth_rate']}-"
-                                        f"{model_kwargs['cluster_num']}"
+                                        f"{model_kwargs['cluster_num']}",
+                                        f"{model_kwargs['smooth_rate']}"
                                         )
     print(opts.output_dir)
     # Set output directory and index

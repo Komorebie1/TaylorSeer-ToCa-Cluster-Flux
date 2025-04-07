@@ -7,7 +7,7 @@ from torch import Tensor, nn
 
 from flux.math import attention, rope
 
-from flux.modules.cache_functions import force_init, cache_cutfresh, cache_cutfresh_img_txt, update_cache, smooth_update_cache
+from flux.modules.cache_functions import force_init, cache_cutfresh, cache_cutfresh_by_cluster, update_cache, smooth_update_cache
 
 from flux.taylor_utils import taylor_formula, derivative_approximation, taylor_cache_init
 
@@ -366,7 +366,7 @@ class DoubleStreamBlock(nn.Module):
 
                 current['module'] = 'img_mlp'
 
-                fresh_indices, fresh_tokens_img = cache_cutfresh_img_txt(cache_dic=cache_dic, tokens=img, current=current)
+                fresh_indices, fresh_tokens_img = cache_cutfresh_by_cluster(cache_dic=cache_dic, tokens=img, current=current)
                 # fresh_tokens_img = fresh_tokens_img.to(torch.bfloat16)
                 fresh_tokens_img = self.img_mlp((1 + img_mod2.scale) * self.img_norm2(fresh_tokens_img) + img_mod2.shift)
                 if cache_dic['smooth_rate'] > 0.0:
@@ -383,7 +383,7 @@ class DoubleStreamBlock(nn.Module):
                 
                 current['module'] = 'txt_mlp'
                 
-                fresh_indices, fresh_tokens_txt = cache_cutfresh_img_txt(cache_dic=cache_dic, tokens=txt, current=current)
+                fresh_indices, fresh_tokens_txt = cache_cutfresh_by_cluster(cache_dic=cache_dic, tokens=txt, current=current)
                 fresh_tokens_txt = self.txt_mlp((1 + txt_mod2.scale) * self.txt_norm2(fresh_tokens_txt) + txt_mod2.shift)
                 # if cache_dic['smooth_rate'] > 0.0:
                 #     smooth_update_cache(fresh_indices, fresh_tokens=fresh_tokens_txt, cache_dic=cache_dic, current=current)
@@ -539,7 +539,28 @@ class SingleStreamBlock(nn.Module):
                 output = taylor_formula(cache_dic=cache_dic, current=current)
 
             elif current['type'] == 'Taylor-Cluster':
+                # current['module'] = 'total'
+                # output = taylor_formula(cache_dic=cache_dic, current=current)
+                self.load_mlp_in_weights(self.linear1.weight, self.linear1.bias)
                 current['module'] = 'total'
+                fresh_indices, fresh_tokens_mlp = cache_cutfresh_by_cluster(cache_dic=cache_dic, tokens=x, current=current)
+                current['module'] = 'mlp'
+                x_mod = (1 + mod.scale) * self.pre_norm(fresh_tokens_mlp) + mod.shift
+                #cache_dic['cache'][-1]['single_stream'][current['layer']]['mlp']
+                mlp_fresh = self.mlp_in(x_mod)
+                #_, mlp_fresh1 = torch.split(self.linear1(x_mod), [3 * self.hidden_size, self.mlp_hidden_dim], dim=-1)
+                # compute attention
+                current['module'] = 'attn'
+                attn_cache = taylor_formula(cache_dic, current).unsqueeze(0)
+                fake_fresh_attn = torch.gather(input = attn_cache, dim = 1, 
+                                               index = fresh_indices.unsqueeze(-1).expand(-1, -1, attn_cache.shape[-1]))
+                
+                current['module'] = 'total'
+                fresh_tokens_output = self.linear2(torch.cat((fake_fresh_attn, self.mlp_act(mlp_fresh)), 2))
+                if cache_dic['smooth_rate'] > 0.0:
+                    smooth_update_cache(fresh_indices=fresh_indices, fresh_tokens=fresh_tokens_output, cache_dic=cache_dic, current=current)
+                else:
+                    update_cache(fresh_indices=fresh_indices, fresh_tokens=fresh_tokens_output, cache_dic=cache_dic, current=current)
                 output = taylor_formula(cache_dic=cache_dic, current=current)
 
             elif current['type'] == 'aggressive':
@@ -556,7 +577,11 @@ class SingleStreamBlock(nn.Module):
             if current['layer'] == 37:
                 cache_dic['cache'][-1]['aggressive_output'] = x
             
-        return x + mod.gate * output
+        final_output = x + mod.gate * output
+        if cache_dic is not None:
+            if current['type'] == 'full' and current['layer'] == 37 and cache_dic['mode'] == 'Taylor-Cluster':
+                get_cluster_info(final_output, cache_dic, current)
+        return final_output
 
 
 class LastLayer(nn.Module):
