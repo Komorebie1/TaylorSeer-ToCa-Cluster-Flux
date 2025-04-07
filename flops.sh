@@ -18,6 +18,7 @@ for max_order in ${max_orders[@]}; do
             --output_dir ./single_and_double \
             --num_steps 50 \
             --mode Taylor-Cluster \
+            --test_FLOPs \
             --max_order $max_order \
             --fresh_threshold $fresh_threshold \
             --cluster_num 256 \

@@ -128,6 +128,7 @@ def cache_init(timesteps, model_kwargs:dict | None):
         cache_dic['cluster_info']['single_stream'] = {}
         cache_dic['cluster_info']['double_stream']['img_mlp'] = cluster_info_dict
         cache_dic['cluster_info']['double_stream']['txt_mlp'] = cluster_info_dict
+        cache_dic['cluster_info']['single_stream']['total']   = cluster_info_dict
 
 
     elif mode == 'Delta':
