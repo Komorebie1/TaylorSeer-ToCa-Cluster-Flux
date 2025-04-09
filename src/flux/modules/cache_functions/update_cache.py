@@ -25,26 +25,43 @@ def smooth_update_cache(fresh_indices, fresh_tokens, cache_dic, current, fresh_a
         cluster_info['cluster_indices'], cluster_info['cluster_num'], cluster_info['topk']
     smooth_rate = cache_dic['smooth_rate']
     dim = fresh_tokens.shape[-1]
-    cache_dic['cache'][-1][current['stream']][layer][module][0].scatter_(dim=1, index=fresh_indices.unsqueeze(-1).expand(-1, -1, dim), src=fresh_tokens)
-    old_cache = cache_dic['cache'][-1][current['stream']][layer][module][0]
-    B, N, dim = old_cache.shape
-    device = old_cache.device
+    # cache_dic['cache'][-1][current['stream']][layer][module][0].scatter_(dim=1, index=fresh_indices.unsqueeze(-1).expand(-1, -1, dim), src=fresh_tokens)
+    # old_cache = cache_dic['cache'][-1][current['stream']][layer][module][0]
+    # B, N, dim = old_cache.shape
+    # device = old_cache.device
+    # fresh_cluster_indices = cluster_indices.gather(dim=1, index=fresh_indices)
+    # sum_per_cluster = torch.zeros((B, cluster_num, dim), device=device, dtype=torch.bfloat16)
+    # sum_per_cluster.scatter_add_(
+    #     dim=1,
+    #     index=fresh_cluster_indices.unsqueeze(-1).expand(-1, -1, dim),
+    #     src=fresh_tokens
+    # )
+    # mean_per_cluster = sum_per_cluster                                                       # only when topk == 1
+    # # mean_per_cluster = sum_per_cluster / count_per_cluster.unsqueeze(-1).clamp(min=1e-6)   # when topk > 1
 
+    # new_cache = mean_per_cluster.gather(1, cluster_indices.unsqueeze(-1).expand(-1, -1, dim))
+    # cache_dic['cache'][-1][current['stream']][layer][module][0] = new_cache * smooth_rate + old_cache * (1 - smooth_rate)
+    smooth_update_cache_compile(old_cache_dict=cache_dic['cache'][-1][current['stream']][layer][module],
+                                fresh_indices=fresh_indices,
+                                fresh_tokens=fresh_tokens,
+                                cluster_indices=cluster_indices,
+                                cluster_num=cluster_num,
+                                smooth_rate=smooth_rate)
+
+@torch.compile
+def smooth_update_cache_compile(old_cache_dict, fresh_indices, fresh_tokens, cluster_indices, cluster_num, smooth_rate):
+    B, N, dim = old_cache_dict[0].shape
+    device = old_cache_dict[0].device
+    old_cache_dict[0].scatter_(dim=1, index=fresh_indices.unsqueeze(-1).expand(-1, -1, dim), src=fresh_tokens)
     fresh_cluster_indices = cluster_indices.gather(dim=1, index=fresh_indices)
-
     sum_per_cluster = torch.zeros((B, cluster_num, dim), device=device, dtype=torch.bfloat16)
-
     sum_per_cluster.scatter_add_(
         dim=1,
         index=fresh_cluster_indices.unsqueeze(-1).expand(-1, -1, dim),
         src=fresh_tokens
-    )
-
+        )
     mean_per_cluster = sum_per_cluster                                                       # only when topk == 1
     # mean_per_cluster = sum_per_cluster / count_per_cluster.unsqueeze(-1).clamp(min=1e-6)   # when topk > 1
 
     new_cache = mean_per_cluster.gather(1, cluster_indices.unsqueeze(-1).expand(-1, -1, dim))
-    cache_dic['cache'][-1][current['stream']][layer][module][0] = new_cache * smooth_rate + old_cache * (1 - smooth_rate)
-
-        
-        
+    old_cache_dict[0] = new_cache * smooth_rate + old_cache_dict[0] * (1 - smooth_rate)

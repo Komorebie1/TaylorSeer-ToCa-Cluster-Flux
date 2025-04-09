@@ -1,9 +1,9 @@
 export FLUX_DEV="/root/autodl-tmp/pretrained_models/black-forest-labs/FLUX.1-dev/flux1-dev.safetensors"
 export AE="/root/autodl-tmp/pretrained_models/black-forest-labs/FLUX.1-dev/ae.safetensors"
 
-max_orders=(1 2)
-fresh_thresholds=(5 6 7)
-smooth_rates=(0.0 0.001 0.002 0.003 0.004 0.005)
+max_orders=(2)
+fresh_thresholds=(5 6)
+smooth_rates=(0.001)
 
 for max_order in ${max_orders[@]}; do
     for fresh_threshold in ${fresh_thresholds[@]}; do
@@ -15,12 +15,12 @@ for max_order in ${max_orders[@]}; do
             --width 1024 --height 1024 \
             --model_name flux-dev \
             --add_sampling_metadata \
-            --output_dir ./single_and_double \
+            --output_dir ./latency \
             --num_steps 50 \
             --mode Taylor-Cluster \
             --max_order $max_order \
             --fresh_threshold $fresh_threshold \
-            --cluster_num 256 \
+            --cluster_num 16 \
             --smooth_rate $rate
         done
     done

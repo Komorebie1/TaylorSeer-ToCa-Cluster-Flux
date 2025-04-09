@@ -31,13 +31,25 @@ def taylor_formula(cache_dic: Dict, current: Dict) -> torch.Tensor:
     :param current: Information of the current step
     """
     x = current['step'] - current['activated_steps'][-1]
-    #x = current['t'] - current['activated_times'][-1]
-    output = 0
+    # #x = current['t'] - current['activated_times'][-1]
+    # output = 0
 
-    for i in range(len(cache_dic['cache'][-1][current['stream']][current['layer']][current['module']])):
-        output += (1 / math.factorial(i)) * cache_dic['cache'][-1][current['stream']][current['layer']][current['module']][i] * (x ** i)
+    # for i in range(len(cache_dic['cache'][-1][current['stream']][current['layer']][current['module']])):
+    #     output += (1 / math.factorial(i)) * cache_dic['cache'][-1][current['stream']][current['layer']][current['module']][i] * (x ** i)
     
-    return output
+    # return output
+    return taylor_formula_compile(
+        module_dict=cache_dic['cache'][-1][current['stream']][current['layer']][current['module']], 
+        distance=x
+        )
+
+@torch.compile
+def taylor_formula_compile(module_dict: Dict, distance:int) -> torch.Tensor:
+    output = 0
+    for i in range(len(module_dict)):
+        output += (1 / math.factorial(i)) * module_dict[i] * (distance ** i)
+    return output    
+
 
 def taylor_cache_init(cache_dic: Dict, current: Dict):
     """

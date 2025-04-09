@@ -1,7 +1,7 @@
 export HF_ENDPOINT=https://hf-mirror.com
 
 # fresh_threshold=7
-fresh_thresholds=(4 5 6 7 8)
+fresh_thresholds=(5 6)
 max_order=1
 
 # python image_reward.py --image_folder April_1/$fresh_threshold-$max_order/Taylor --model_name ImageReward-v1.0
@@ -11,7 +11,7 @@ do
     for rate in ${smooth_rates[@]};
     do 
         echo "evaluate on smooth rate: $rate..."
-        python image_reward.py --image_folder April_4/$fresh_threshold-$max_order/Taylor-Cluster/256/$rate --model_name ImageReward-v1.0
-        # python image_reward.py --image_folder origin_flux/4-1/Taylor --model_name ImageReward-v1.0
+        python image_reward.py --image_folder single_and_double/$fresh_threshold-$max_order/Taylor-Cluster/256/$rate --model_name ImageReward-v1.0
+        # python image_reward.py --image_folder April_1/6-1/Taylor --model_name ImageReward-v1.0
     done
 done

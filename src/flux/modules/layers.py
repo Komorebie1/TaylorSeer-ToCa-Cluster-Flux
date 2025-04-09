@@ -539,29 +539,31 @@ class SingleStreamBlock(nn.Module):
                 output = taylor_formula(cache_dic=cache_dic, current=current)
 
             elif current['type'] == 'Taylor-Cluster':
-                # current['module'] = 'total'
-                # output = taylor_formula(cache_dic=cache_dic, current=current)
-                self.load_mlp_in_weights(self.linear1.weight, self.linear1.bias)
                 current['module'] = 'total'
-                fresh_indices, fresh_tokens_mlp = cache_cutfresh_by_cluster(cache_dic=cache_dic, tokens=x, current=current)
-                current['module'] = 'mlp'
-                x_mod = (1 + mod.scale) * self.pre_norm(fresh_tokens_mlp) + mod.shift
-                #cache_dic['cache'][-1]['single_stream'][current['layer']]['mlp']
-                mlp_fresh = self.mlp_in(x_mod)
-                #_, mlp_fresh1 = torch.split(self.linear1(x_mod), [3 * self.hidden_size, self.mlp_hidden_dim], dim=-1)
-                # compute attention
-                current['module'] = 'attn'
-                attn_cache = taylor_formula(cache_dic, current).unsqueeze(0)
-                fake_fresh_attn = torch.gather(input = attn_cache, dim = 1, 
-                                               index = fresh_indices.unsqueeze(-1).expand(-1, -1, attn_cache.shape[-1]))
-                
-                current['module'] = 'total'
-                fresh_tokens_output = self.linear2(torch.cat((fake_fresh_attn, self.mlp_act(mlp_fresh)), 2))
-                if cache_dic['smooth_rate'] > 0.0:
-                    smooth_update_cache(fresh_indices=fresh_indices, fresh_tokens=fresh_tokens_output, cache_dic=cache_dic, current=current)
-                else:
-                    update_cache(fresh_indices=fresh_indices, fresh_tokens=fresh_tokens_output, cache_dic=cache_dic, current=current)
                 output = taylor_formula(cache_dic=cache_dic, current=current)
+                # # current['module'] = 'total'
+                # # output = taylor_formula(cache_dic=cache_dic, current=current)
+                # self.load_mlp_in_weights(self.linear1.weight, self.linear1.bias)
+                # current['module'] = 'total'
+                # fresh_indices, fresh_tokens_mlp = cache_cutfresh_by_cluster(cache_dic=cache_dic, tokens=x, current=current)
+                # current['module'] = 'mlp'
+                # x_mod = (1 + mod.scale) * self.pre_norm(fresh_tokens_mlp) + mod.shift
+                # #cache_dic['cache'][-1]['single_stream'][current['layer']]['mlp']
+                # mlp_fresh = self.mlp_in(x_mod)
+                # #_, mlp_fresh1 = torch.split(self.linear1(x_mod), [3 * self.hidden_size, self.mlp_hidden_dim], dim=-1)
+                # # compute attention
+                # current['module'] = 'attn'
+                # attn_cache = taylor_formula(cache_dic, current).unsqueeze(0)
+                # fake_fresh_attn = torch.gather(input = attn_cache, dim = 1, 
+                #                                index = fresh_indices.unsqueeze(-1).expand(-1, -1, attn_cache.shape[-1]))
+                
+                # current['module'] = 'total'
+                # fresh_tokens_output = self.linear2(torch.cat((fake_fresh_attn, self.mlp_act(mlp_fresh)), 2))
+                # if cache_dic['smooth_rate'] > 0.0:
+                #     smooth_update_cache(fresh_indices=fresh_indices, fresh_tokens=fresh_tokens_output, cache_dic=cache_dic, current=current)
+                # else:
+                #     update_cache(fresh_indices=fresh_indices, fresh_tokens=fresh_tokens_output, cache_dic=cache_dic, current=current)
+                # output = taylor_formula(cache_dic=cache_dic, current=current)
 
             elif current['type'] == 'aggressive':
                 current['module'] = 'skipped'
@@ -578,9 +580,9 @@ class SingleStreamBlock(nn.Module):
                 cache_dic['cache'][-1]['aggressive_output'] = x
             
         final_output = x + mod.gate * output
-        if cache_dic is not None:
-            if current['type'] == 'full' and current['layer'] == 37 and cache_dic['mode'] == 'Taylor-Cluster':
-                get_cluster_info(final_output, cache_dic, current)
+        # if cache_dic is not None:
+        #     if current['type'] == 'full' and current['layer'] == 37 and cache_dic['mode'] == 'Taylor-Cluster':
+        #         get_cluster_info(final_output, cache_dic, current)
         return final_output
 
 
